@@ -12,7 +12,7 @@ from utils.helper import get_column
 
 
 # Page configuration
-st.set_page_config(page_title="Tribeca Dashboard", layout="wide", page_icon='assets/logo.webp')
+st.set_page_config(page_title="Tribeca Collection Dashboard", layout="wide", page_icon='assets/logo.webp')
 
 
 # ------------------ Shared "Today" Input ------------------
