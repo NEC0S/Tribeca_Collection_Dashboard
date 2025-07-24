@@ -17,6 +17,7 @@ def render_dashboard(df,today):
 
         ## column entry 
         # Get dynamic mappings with fallback if default is missing
+        other_charges=get_column(df,"Other Charges (Corpus+Maintenance)","Other Charges (Corpus+Maintenance)")
         booking_col = get_column(df, "Booking Date", "Booking Date")
         reg_date_col = get_column(df, "Agreement Registration Date", "Agreement Registration Date")
         actual_payment_col = get_column(df, "Actual Payment Date", "Actual Payment Date")
@@ -202,6 +203,12 @@ def render_dashboard(df,today):
         reg_sales_act = reg_df.groupby(application_booking_id)[total_agreement_col].first().sum()
         unreg_sales_act = unreg_df.groupby(application_booking_id)[total_agreement_col].first().sum()
 
+
+        # Sales
+        total_saless = df.groupby(application_booking_id)[other_charges].first().sum()
+        reg_saless = reg_df.groupby(application_booking_id)[other_charges].first().sum()
+        unreg_saless = unreg_df.groupby(application_booking_id)[other_charges].first().sum()
+
         # Sales
         total_sales = df.groupby(application_booking_id)['Agreement value'].first().sum()
         reg_sales = reg_df.groupby(application_booking_id)['Agreement value'].first().sum()
@@ -261,6 +268,8 @@ def render_dashboard(df,today):
             "Metric": [
                 "Total Units Booked",
                 "Total Agreement Value",
+                "Corpus+Maintenance",
+                "Total Agreement Value (Added Corpus+Maintenance)",
                 "Total Agreement Value (Sum of All Dues)",
                 "Total Demand Till Date",
                 "Budgeted Passed, Demand Not Raised",
@@ -270,7 +279,9 @@ def render_dashboard(df,today):
             ],
             "All Units": [
                 booked_units,
-                f"₹{total_sales_act / 1e7:,.2f} Cr",
+                total_sales_act/1e7,
+                total_saless/1e7,
+                f"₹{(total_sales_act + total_saless) / 1e7:,.2f} Cr",
                 f"₹ {total_sales / 1e7:,.2f} Cr",
                 
                 percent(total_due, total_sales),
@@ -282,7 +293,9 @@ def render_dashboard(df,today):
             ],
             "Registered Users": [
                 reg_units,
-                f"₹ {reg_sales_act / 1e7:,.2f} Cr",
+                reg_sales_act/1e7,
+                reg_saless/1e7,
+                f"₹ {(reg_sales_act + reg_saless)/ 1e7:,.2f} Cr",
                 f"₹ {reg_sales / 1e7:,.2f} Cr",
                 
                 percent(reg_due, reg_sales),
@@ -294,7 +307,9 @@ def render_dashboard(df,today):
             ],
             "Unregistered Users": [
                 unreg_units,
-                f"₹ {unreg_sales_act / 1e7:,.2f} Cr",
+                unreg_sales_act/1e7,
+                unreg_saless/1e7,
+                f"₹ {(unreg_sales_act + unreg_saless)/ 1e7:,.2f} Cr",
                 f"₹ {unreg_sales / 1e7:,.2f} Cr",
                 
                 percent(unreg_due, unreg_sales),

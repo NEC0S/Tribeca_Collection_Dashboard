@@ -13,6 +13,7 @@ def check(df,today):
 
     ## column entry 
     # Get dynamic mappings with fallback if default is missing
+    other_charges=get_column(df,"Other Charges (Corpus+Maintenance)","Other Charges (Corpus+Maintenance)")
     booking_col = get_column(df, "Booking Date", "Booking Date")
     reg_date_col = get_column(df, "Agreement Registration Date", "Agreement Registration Date")
     actual_payment_col = get_column(df, "Actual Payment Date", "Actual Payment Date")
@@ -92,7 +93,7 @@ def check(df,today):
     
     # Check 7: Milestone Done but No Demand Raised
     milestone_done_no_demand = df[(df[milestone_status_col] == 1) & (df[demand_gen_col].isna())]
-    milestone_done_no_demand_df = milestone_done_no_demand[[customer_name, milestone_name]].drop_duplicates()
+    milestone_done_no_demand_df = milestone_done_no_demand[[property_name,customer_name, milestone_name]].drop_duplicates()
     if not milestone_done_no_demand_df.empty:
         st.subheader("⚠️ Milestone Completed But No Demand Raised")
         st.warning(f"{len(milestone_done_no_demand_df)} such milestones found!")
@@ -102,7 +103,7 @@ def check(df,today):
 
     # Check 14: Tax Greater Than Payment Received
     invalid_tax = df[(df[tax] > df[payment_received_col])]
-    invalid_tax_df = invalid_tax[[customer_name, tax, payment_received_col]].drop_duplicates()
+    invalid_tax_df = invalid_tax[[property_name,customer_name, tax, payment_received_col]].drop_duplicates()
     if not invalid_tax_df.empty:
         st.subheader("⚠️ GST/TAX Greater Than Payment Received")
         st.warning(f"{len(invalid_tax_df)} entries found where tax exceeds payment!")
@@ -112,7 +113,7 @@ def check(df,today):
 
     # Check 12: Budgeted Date Passed but No Demand Raised
     budget_passed_no_demand = df[(df[budgeted_date_col] < pd.Timestamp.today()) & (df[demand_gen_col].isna())]
-    budget_passed_no_demand_df = budget_passed_no_demand[[customer_name, milestone_name, budgeted_date_col]].drop_duplicates()
+    budget_passed_no_demand_df = budget_passed_no_demand[[property_name,customer_name, milestone_name, budgeted_date_col]].drop_duplicates()
     if not budget_passed_no_demand_df.empty:
         st.subheader("⚠️ Budgeted Date Passed But No Demand Raised")
         st.warning(f"{len(budget_passed_no_demand_df)} such milestones found!")
@@ -120,10 +121,41 @@ def check(df,today):
     else:
         st.success("✅ All overdue milestones have raised demands.")
 
+
+    # Check 13: Total Agreement Value vs Sum of Due Amounts (Discrepancy > ₹1000)
+    # Step 1: Get unique Total Agreement Value and Customer Name for each Booking ID
+    unique_agreement_info = (
+        df[[property_name,application_booking_id, customer_name, total_agreement_col]]
+        .drop_duplicates(subset=[application_booking_id])
+        .set_index(application_booking_id)
+    )
+
+    # Step 2: Compute sum of due amounts for each Booking ID
+    due_sum = df.groupby(application_booking_id)[amount_due_col].sum().rename('total_due_amount')
+
+    # Step 3: Combine and compute difference
+    discrepancy_df = unique_agreement_info.join(due_sum, how='left').reset_index()
+    discrepancy_df['difference'] = discrepancy_df['total_due_amount']- discrepancy_df[total_agreement_col] 
+
+    # Step 4: Filter where discrepancy > ₹1000 or < -₹1000
+    discrepancy_df_filtered = discrepancy_df[
+        (discrepancy_df['difference'] > 1000) | (discrepancy_df['difference'] < -1000)
+    ]
+
+    # Step 5: Show in Streamlit
+    if not discrepancy_df_filtered.empty:
+        st.subheader("⚠️ Agreement Value vs Due Amount Discrepancy")
+        st.warning(f"{len(discrepancy_df_filtered)} bookings have discrepancies > ₹1000!")
+        st.dataframe(discrepancy_df_filtered[[property_name,customer_name, application_booking_id, total_agreement_col, 'total_due_amount', 'difference']])
+    else:
+        st.success("✅ All bookings have due amounts aligned with agreement value.")
+
+
+
     
     # Check 11: Duplicate Payments for Same Milestone
     dup_payments = df[df.duplicated(subset=[application_booking_id, milestone_name, actual_payment_col], keep=False)]
-    dup_payments_df = dup_payments[[customer_name, application_booking_id, milestone_name, actual_payment_col]].drop_duplicates()
+    dup_payments_df = dup_payments[[property_name,customer_name, application_booking_id, milestone_name, actual_payment_col]].drop_duplicates()
     if not dup_payments_df.empty:
         st.subheader("⚠️ Duplicate Payments for Same Milestone")
         st.warning(f"{len(dup_payments_df)} duplicate payment entries found!")
@@ -142,12 +174,13 @@ def check(df,today):
         
         # Merge with customer name for display
         invalid_percentage_df = invalid_percentage_sum.merge(
-            df[[application_booking_id, customer_name]].drop_duplicates(), 
+            df[[property_name,application_booking_id, customer_name]].drop_duplicates(), 
             on=application_booking_id, 
             how='left'
-        )[[application_booking_id, customer_name, percentage_col]].drop_duplicates()
+        )[[property_name,application_booking_id, customer_name, percentage_col]].drop_duplicates()
         
         st.dataframe(invalid_percentage_df.rename(columns={
+            property_name: "Property Name",
             application_booking_id: "Booking ID",
             customer_name: "Customer Name",
             percentage_col: "Total %"

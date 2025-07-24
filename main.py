@@ -11,6 +11,10 @@ from components.check import check
 from utils.helper import get_column
 
 
+# Page configuration
+st.set_page_config(page_title="Tribeca Dashboard", layout="wide", page_icon='assets/logo.webp')
+
+
 # ------------------ Shared "Today" Input ------------------
 st.sidebar.markdown("### 📅 Date Configuration")
 today = pd.to_datetime(st.sidebar.date_input(
@@ -21,8 +25,7 @@ today = pd.to_datetime(st.sidebar.date_input(
 
 
 
-# Page configuration
-st.set_page_config(page_title="Tribeca Dashboard", layout="wide", page_icon='assets/logo.webp')
+
 
 # Setup
 def get_base_path():

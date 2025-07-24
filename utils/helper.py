@@ -50,15 +50,18 @@ def render_svg(svg_path):
     st.markdown(html, unsafe_allow_html=True)
     
 def highlight_rows(row):
-    color = ''
-    if "Agreement" in row["Metric"]:
-        color = 'background-color: #e6f7ff'  # light blue
-    elif "Collected" in row["Metric"]:
-        color = 'background-color: #e8fce8'  # light green
-    elif "Overdue" in row["Metric"]:
-        color = 'background-color: #fff3e6'  # light orange
-    elif "Demand" in row["Metric"]:
-        color = 'background-color: #fef7e0'  # light yellow
-    elif "Units" in row["Metric"]:
-        color = 'background-color: #f2f2f2'  # light gray
-    return [color] * len(row)
+    color_map = {
+        "Total Agreement Value": '#d1e7dd',  # Light green
+        "Corpus+Maintenance": '#d1e7dd',
+        "Total Agreement Value (Added Corpus+Maintenance)": '#cfe2ff',  # Light blue
+        "Total Agreement Value (Sum of All Dues)": '#cfe2ff',
+        "Total Demand Till Date": '#fff3cd',  # Light yellow
+        "Expected Future Demand": '#fff3cd',
+        "Budgeted Passed, Demand Not Raised": '#fff3cd',
+        "Amount Collected (Without TAX)": '#f8d7da',  # Light red/pink
+        "Amount Overdue": "#d3a2f0"
+    }
+
+    row_name = row['Metric']
+    color = color_map.get(row_name, '')  # Default: no color
+    return ['background-color: {}'.format(color) if color else '' for _ in row]
