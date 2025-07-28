@@ -9,16 +9,16 @@ venv/
 ENV/
 env/
 .venv/
-
+.build/
 # VSCode workspace and config
 .vscode/
 
 # macOS and system files
 .DS_Store
 Thumbs.db
-
+setup.py
 # Streamlit configuration and secrets
-.streamlit/
+.streamlit/secrets.toml
 
 # Ignore test artifacts
 *.log
@@ -30,7 +30,7 @@ Report_id.txt
 
 # Ignore data folder
 /data/
-
+/build/
 # Ignore compiled files
 *.so
 

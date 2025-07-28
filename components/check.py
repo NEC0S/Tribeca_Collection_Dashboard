@@ -2,8 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from utils.helper import get_column ,bucket, percent,highlight_rows
-
+from utils.helper import get_column
 
 def check(df,today):
     df.columns = df.columns.str.strip() # -> Quality check for columns name.
@@ -32,7 +31,6 @@ def check(df,today):
     tower = get_column(df, "Tower", "Tower")
     type = get_column(df, "Type", "Type")
     milestone_name = get_column(df, "Milestone Name", "Milestone Name")
-    booking_through = get_column(df, "Booking Through", "Booking Through")
 
 
     df[booking_col] = pd.to_datetime(df[booking_col], errors='coerce', dayfirst=True)
@@ -101,16 +99,6 @@ def check(df,today):
     else:
         st.success("✅ All completed milestones have demand raised.")
 
-    # Check 14: Tax Greater Than Payment Received
-    invalid_tax = df[(df[tax] > df[payment_received_col])]
-    invalid_tax_df = invalid_tax[[property_name,customer_name, tax, payment_received_col]].drop_duplicates()
-    if not invalid_tax_df.empty:
-        st.subheader("⚠️ GST/TAX Greater Than Payment Received")
-        st.warning(f"{len(invalid_tax_df)} entries found where tax exceeds payment!")
-        st.dataframe(invalid_tax_df)
-    else:
-        st.success("✅ All tax entries are valid against payments.")
-
     # Check 12: Budgeted Date Passed but No Demand Raised
     budget_passed_no_demand = df[(df[budgeted_date_col] < pd.Timestamp.today()) & (df[demand_gen_col].isna())]
     budget_passed_no_demand_df = budget_passed_no_demand[[property_name,customer_name, milestone_name, budgeted_date_col]].drop_duplicates()
@@ -122,33 +110,25 @@ def check(df,today):
         st.success("✅ All overdue milestones have raised demands.")
 
 
-    # Check 13: Total Agreement Value vs Sum of Due Amounts (Discrepancy > ₹1000)
-    # Step 1: Get unique Total Agreement Value and Customer Name for each Booking ID
-    unique_agreement_info = (
-        df[[property_name,application_booking_id, customer_name, total_agreement_col]]
-        .drop_duplicates(subset=[application_booking_id])
-        .set_index(application_booking_id)
-    )
+    # Check 15: Booking Financial Mismatch - Agreement + Other Charges vs Total Due
+    grouped = df.groupby(application_booking_id).agg({
+        property_name: 'first',
+        total_agreement_col: 'first',         # Take the single value
+        other_charges: 'first',               # Take the single value
+        amount_due_col: 'sum'                 # Sum for booking
+    }).reset_index()
 
-    # Step 2: Compute sum of due amounts for each Booking ID
-    due_sum = df.groupby(application_booking_id)[amount_due_col].sum().rename('total_due_amount')
+    grouped['diff'] = (grouped[total_agreement_col] + grouped[other_charges]) - grouped[amount_due_col]
 
-    # Step 3: Combine and compute difference
-    discrepancy_df = unique_agreement_info.join(due_sum, how='left').reset_index()
-    discrepancy_df['difference'] = discrepancy_df['total_due_amount']- discrepancy_df[total_agreement_col] 
+    invalid_financial = grouped[(grouped['diff'] < -1000) | (grouped['diff'] > 1000)]
+    invalid_financial_df = invalid_financial[[property_name, application_booking_id, total_agreement_col, other_charges, amount_due_col, 'diff']]
 
-    # Step 4: Filter where discrepancy > ₹1000 or < -₹1000
-    discrepancy_df_filtered = discrepancy_df[
-        (discrepancy_df['difference'] > 1000) | (discrepancy_df['difference'] < -1000)
-    ]
-
-    # Step 5: Show in Streamlit
-    if not discrepancy_df_filtered.empty:
-        st.subheader("⚠️ Agreement Value vs Due Amount Discrepancy")
-        st.warning(f"{len(discrepancy_df_filtered)} bookings have discrepancies > ₹1000!")
-        st.dataframe(discrepancy_df_filtered[[property_name,customer_name, application_booking_id, total_agreement_col, 'total_due_amount', 'difference']])
+    if not invalid_financial_df.empty:
+        st.subheader("⚠️ Booking Value Mismatch")
+        st.warning(f"{len(invalid_financial_df)} entries found with mismatched booking values!")
+        st.dataframe(invalid_financial_df)
     else:
-        st.success("✅ All bookings have due amounts aligned with agreement value.")
+        st.success("✅ All booking value entries are within acceptable range.")
 
 
 
@@ -187,4 +167,23 @@ def check(df,today):
         }))
     else:
         st.success("✅ All bookings have milestone percentages summing up to 100.")
+
+
+
+    # Check 14: Tax Greater Than Payment Received
+    invalid_tax = df[(df[tax] > df[payment_received_col])]
+    invalid_tax_df = invalid_tax[[property_name,customer_name, tax, payment_received_col]].drop_duplicates()
+    if not invalid_tax_df.empty:
+        st.subheader("⚠️ GST/TAX Greater Than Payment Received")
+        st.warning(f"{len(invalid_tax_df)} entries found where tax exceeds payment!")
+        st.dataframe(invalid_tax_df)
+    else:
+        st.success("✅ All tax entries are valid against payments.")
+
+    
+
+    
+
+
+    
 

@@ -3,6 +3,13 @@ import streamlit as st
 import base64
 import streamlit as st
 
+def add_discrepancy_block(title, df_block):
+    if not df_block.empty:
+        # Insert a header row (all columns blank except first with the title)
+        header_row = pd.DataFrame([["⚠️ " + title] + [""] * (df_block.shape[1] - 1)], columns=df_block.columns)
+        return pd.concat([header_row, df_block], ignore_index=True)
+    else:
+        return pd.DataFrame(columns=df_block.columns)
 
 def get_column(df, default_col, label, key_prefix="shared"):
     """

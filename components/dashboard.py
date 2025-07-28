@@ -34,9 +34,7 @@ def render_dashboard(df,today):
         tax = get_column(df, "Total Service Tax On PPD", "Application / Booking ID (Unique and Not Null)")
         tower = get_column(df, "Tower", "Tower")
         type = get_column(df, "Type", "Type")
-        milestone_name = get_column(df, "Milestone Name", "Milestone Name")
-        booking_through = get_column(df, "Booking Through", "Booking Through")
-
+        milestone_name = get_column(df, "Milestone Name", "Milestone Name")      
 
         df[booking_col] = pd.to_datetime(df[booking_col], errors='coerce', dayfirst=True)
         df[total_agreement_col] = pd.to_numeric(df[total_agreement_col].astype(str).str.replace(r'[₹,]', '', regex=True), errors='coerce')
@@ -279,10 +277,10 @@ def render_dashboard(df,today):
             ],
             "All Units": [
                 booked_units,
-                total_sales_act/1e7,
-                total_saless/1e7,
-                f"₹{(total_sales_act + total_saless) / 1e7:,.2f} Cr",
-                f"₹ {total_sales / 1e7:,.2f} Cr",
+                f"₹{float(total_sales_act)/1e7:,.2f} Cr",
+                f"₹{float(total_saless)/1e7:,.2f} Cr",
+                f"₹{(float(total_sales_act + total_saless)) / 1e7:,.2f} Cr",
+                f"₹ {float(total_sales) / 1e7:,.2f} Cr",
                 
                 percent(total_due, total_sales),
                 percent(total_due_n, total_sales),
@@ -293,10 +291,10 @@ def render_dashboard(df,today):
             ],
             "Registered Users": [
                 reg_units,
-                reg_sales_act/1e7,
-                reg_saless/1e7,
-                f"₹ {(reg_sales_act + reg_saless)/ 1e7:,.2f} Cr",
-                f"₹ {reg_sales / 1e7:,.2f} Cr",
+                f"₹ {float(reg_sales_act)/1e7:,.2f} Cr",
+                f"₹ {float(reg_saless)/1e7:,.2f} Cr",
+                f"₹ {(float(reg_sales_act + reg_saless))/ 1e7:,.2f} Cr",
+                f"₹ {float(reg_sales) / 1e7:,.2f} Cr",
                 
                 percent(reg_due, reg_sales),
                 percent(reg_due_n, reg_sales),
@@ -307,10 +305,10 @@ def render_dashboard(df,today):
             ],
             "Unregistered Users": [
                 unreg_units,
-                unreg_sales_act/1e7,
-                unreg_saless/1e7,
-                f"₹ {(unreg_sales_act + unreg_saless)/ 1e7:,.2f} Cr",
-                f"₹ {unreg_sales / 1e7:,.2f} Cr",
+                f"₹ {float(unreg_sales_act)/1e7:,.2f} Cr",
+                f"₹ {float(unreg_saless)/1e7:,.2f} Cr",
+                f"₹ {float(unreg_sales_act + unreg_saless)/ 1e7:,.2f} Cr",
+                f"₹ {float(unreg_sales) / 1e7:,.2f} Cr",
                 
                 percent(unreg_due, unreg_sales),
                 percent(unreg_due_n, unreg_sales),

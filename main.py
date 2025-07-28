@@ -100,7 +100,6 @@ if st.session_state.data is not None:
         "tower": get_column(df, "Tower", "Tower"),
         "type": get_column(df, "Type", "Type"),
         "milestone_name": get_column(df, "Milestone Name", "Milestone Name"),
-        "booking_through": get_column(df, "Booking Through", "Booking Through"),
     }
 
     st.session_state.column_map = colmap
